@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#f5f7fc" />
+  <title>GradeFlow — 课程成绩计算器</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg:#f8f8ff; --surface:#fff; --surface-low:#f2f3fb; --surface-high:#e9eaf6;
+      --ink:#191b23; --muted:#666a78; --line:#c4c6d4; --line-soft:#e3e4ef;
+      --brand:#495caa; --brand-deep:#364a98; --brand-soft:#dfe4ff; --on-brand-soft:#15265c;
+      --mint:#216e5d; --mint-soft:#d9f4e8; --warn:#8a5b10; --warn-soft:#fff0d6;
+      --danger:#b3261e; --danger-soft:#ffdad6; --radius:24px;
+    }
+    * {box-sizing:border-box}
+    body {margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Roboto,"Noto Sans SC","PingFang SC","Microsoft Yahei",system-ui,-apple-system,sans-serif}
+    button,input,select {font:inherit}
+    button {cursor:pointer;-webkit-tap-highlight-color:transparent}
+    button:disabled {cursor:not-allowed;opacity:.4}
+    button:focus-visible,input:focus-visible,select:focus-visible {outline:3px solid #a7b7ff;outline-offset:2px}
+    .container {width:min(1120px,calc(100% - 48px));margin-inline:auto}
+    .ico {width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round;flex:none}
+    .topbar {display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:78px}
+    .brand {display:flex;align-items:center;gap:12px;color:var(--ink);text-decoration:none}
+    .brand-icon {display:grid;place-items:center;color:var(--on-brand-soft);background:var(--brand-soft);border-radius:16px;width:44px;height:44px}
+    .brand-copy {font-size:20px;font-weight:700;letter-spacing:-.55px}
+    .brand-copy small {display:none}
+    .top-actions,.hero-buttons,.section-actions {display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+    .btn {border:1px solid var(--line);border-radius:100px;background:transparent;color:var(--brand);min-height:40px;padding:9px 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:650;transition:background .16s,box-shadow .16s;white-space:nowrap}
+    .btn:hover {background:#e8ebf7}
+    .btn:active {background:#dfe4fa}
+    .btn-primary {background:var(--brand);color:#fff;border-color:var(--brand)}
+    .btn-primary:hover {background:var(--brand-deep);border-color:var(--brand-deep);box-shadow:0 2px 6px #34456f22}
+    .btn-tinted {background:var(--brand-soft);color:var(--on-brand-soft);border-color:transparent}
+    .btn-tinted:hover {background:#d1d9ff}
+    .btn-danger {color:var(--danger);border-color:transparent}
+    .btn-danger:hover {background:var(--danger-soft)}
+    .btn-icon {width:40px;height:40px;min-height:40px;padding:0;border-color:transparent}
+    .hero {border-radius:28px;background:var(--brand-soft);color:var(--on-brand-soft);padding:23px 28px}
+    .hero::before,.eyebrow,.hero h1,.hero p {display:none}
+    .hero-bottom {display:flex;align-items:end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+    .course-field {display:flex;flex-direction:column;gap:7px;flex:1 1 260px;max-width:380px}
+    .hero-label {font-size:12px;font-weight:650;color:#3e4b76}
+    .select-wrap {position:relative}
+    .select-wrap::after {content:'⌄';position:absolute;top:8px;right:15px;color:var(--on-brand-soft);font-size:20px;pointer-events:none}
+    .course-field select {appearance:none;width:100%;height:49px;padding:0 40px 0 15px;border:1px solid #a9b5e1;background:#f7f8ff;color:var(--on-brand-soft);border-radius:13px;font-weight:650;cursor:pointer}
+    .hero-btn {background:transparent;color:var(--on-brand-soft);border-color:#a6b2e0}
+    .hero-btn:hover {background:#d1daff}
+    main {padding:22px 0 50px}
+    .stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .stat {background:var(--surface);border-radius:24px;padding:21px 24px;min-width:0}
+    .stat:first-child {background:#e9edff}
+    .stat:nth-child(2) {background:#dff3ec}
+    .stat:nth-child(3) {background:#eeedf8}
+    .stat-header {display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:600;color:#485064}
+    .stat-icon {display:grid;place-items:center;color:var(--brand)}
+    .stat:nth-child(2) .stat-icon {color:var(--mint)}
+    .stat:nth-child(3) .stat-icon {color:#655d93}
+    .stat-value {font-size:clamp(32px,3.1vw,43px);font-weight:600;letter-spacing:-1.3px;margin-top:13px;line-height:1.24;font-variant-numeric:tabular-nums}
+    .stat-unit {font-size:15px;letter-spacing:0;color:#6a6d7b;font-weight:500;margin-left:3px}
+    .stat-foot {display:none}
+    .overview {display:grid;grid-template-columns:minmax(0,1.4fr) minmax(285px,1fr);gap:12px;margin-top:12px}
+    .panel {background:var(--surface);border-radius:24px;padding:23px 25px;min-width:0}
+    .panel-title {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:17px}
+    .panel-title h2 {margin:0;font-size:16px;letter-spacing:-.2px;font-weight:650}
+    .pill {display:inline-flex;align-items:center;border-radius:100px;padding:5px 11px;font-weight:650;font-size:11px;white-space:nowrap}
+    .pill-good {background:var(--mint-soft);color:var(--mint)}
+    .pill-warn {background:var(--warn-soft);color:var(--warn)}
+    .pill-danger {background:var(--danger-soft);color:var(--danger)}
+    .bar {height:10px;background:var(--surface-high);border-radius:100px;overflow:hidden;display:flex;margin:14px 0 10px}
+    .bar-segment {height:100%;flex:0 0 auto;transition:width .18s}
+    .legend {display:flex;flex-wrap:wrap;gap:8px 15px;margin-top:13px}
+    .legend-entry {display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+    .dot {display:inline-block;width:9px;height:9px;border-radius:50%;flex:none}
+    .minor-copy {font-size:12px;color:var(--muted)}
+    #weight-advice:empty {display:none}
+    .goal-row {display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .goal-input {display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:13px;background:#fff;padding:0 10px}
+    .goal-input:focus-within {border:2px solid var(--brand);padding-inline:9px}
+    .goal-input input {width:62px;height:45px;text-align:right;border:0;background:transparent;color:var(--ink);outline:none;font-size:19px;font-weight:600}
+    .goal-result {font-size:30px;font-weight:650;letter-spacing:-.75px;color:var(--brand);margin:15px 0 4px}
+    #goal-info {min-height:18px}
+    .section-top {display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:27px 3px 13px}
+    .section-heading {font-size:22px;font-weight:650;letter-spacing:-.4px;margin:0}
+    .section-sub {display:none}
+    .category-list {display:flex;flex-direction:column;gap:12px}
+    .category {--accent:var(--brand);border-radius:24px;background:var(--surface);overflow:hidden;border:1px solid var(--line-soft)}
+    .cat-topline {display:none}
+    .cat-head {padding:22px 23px 15px;display:flex;align-items:start;justify-content:space-between;gap:14px}
+    .cat-label {display:none}
+    .cat-name {font-size:20px;font-weight:650;letter-spacing:-.4px;border:1px solid transparent;border-radius:9px;color:var(--ink);background:transparent;padding:7px 9px;width:min(330px,100%);margin-left:-9px}
+    .cat-name:hover {border-color:var(--line)}
+    .cat-name:focus {border-color:var(--brand);outline:none;background:#fff}
+    .cat-head-right {display:flex;align-items:end;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+    .control-stack {display:flex;flex-direction:column;gap:5px;min-width:0}
+    .field-label {font-size:11px;font-weight:600;color:#555c6d}
+    .number-unit {height:43px;display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:12px;padding:0 11px;background:transparent;color:var(--muted)}
+    .number-unit:focus-within {border:2px solid var(--brand);padding-inline:10px}
+    .number-unit input {width:58px;border:0;background:transparent;outline:none;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;min-width:0}
+    .number-unit input:focus-visible {outline:none}
+    .number-unit.invalid {border-color:var(--danger);background:#fff1f0}
+    .cat-method {height:43px;border:1px solid var(--line);background:transparent;border-radius:12px;padding:0 12px;color:var(--ink);font-size:12px;max-width:142px;cursor:pointer}
+    .cat-settings {margin:0 23px 16px;padding:14px 16px;background:var(--surface-low);border-radius:17px;display:flex;gap:12px 16px;align-items:end;flex-wrap:wrap}
+    .cat-settings .number-unit {background:var(--surface)}
+    .template-stack {flex:1 1 265px;min-width:175px}
+    .template-control {display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+    .template-input {flex:1 1 190px;min-width:125px;height:43px;padding:0 13px;border:1px solid var(--line);border-radius:12px;color:var(--ink);background:var(--surface);outline:none}
+    .template-input:focus {border:2px solid var(--brand);padding-inline:12px}
+    .token-btn {height:32px;border:none;border-radius:100px;padding:0 11px;background:var(--brand-soft);color:var(--on-brand-soft);font-size:12px;font-weight:600;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+    .token-btn:hover {background:#d0d9ff}
+    .next-preview {font-size:11px;color:var(--muted);margin-top:4px;min-height:17px;overflow-wrap:anywhere}
+    .cat-meta {display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 23px 13px}
+    .cat-metric {display:inline-flex;align-items:center;gap:4px;background:var(--surface-low);border-radius:100px;color:var(--muted);font-size:12px;padding:5px 12px}
+    .cat-metric b {font-weight:650;color:var(--ink)}
+    .items-wrap {margin:0 23px;border-top:1px solid var(--line-soft)}
+    .table-heading,.item-row {display:grid;grid-template-columns:minmax(120px,1.55fr) minmax(65px,.7fr) minmax(65px,.7fr) 70px 40px;gap:12px;align-items:center}
+    .table-heading {color:var(--muted);font-size:11px;font-weight:600;padding:12px 0 4px}
+    .item-row {padding:5px 0}
+    .item-input {width:100%;height:42px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--ink);padding:0 11px;font-size:13px;outline:none;min-width:0}
+    .item-input:hover {background:var(--surface-low)}
+    .item-input:focus {border-color:var(--brand);background:#fff}
+    .item-number {background:var(--surface-low);border-color:transparent;font-variant-numeric:tabular-nums}
+    .item-number:focus {background:#fff}
+    .item-number.invalid {border-color:var(--danger);background:var(--danger-soft)}
+    .item-status {font-size:11px;color:var(--muted);font-weight:600}
+    .item-status.done {color:var(--mint)}
+    .cat-footer {display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px 23px 18px}
+    .small-add {border:none;background:var(--brand-soft);color:var(--on-brand-soft);border-radius:100px;padding:9px 15px;font-weight:650;display:inline-flex;align-items:center;gap:6px}
+    .small-add:hover {background:#d0d9ff}
+    .caption {display:none}
+    .empty-list,.empty-cats {margin:10px 0;padding:22px;border-radius:14px;background:var(--surface-low);text-align:center;color:var(--muted)}
+    .empty-cats {margin:0}
+    .bottom-add {width:100%;margin-top:13px;min-height:49px;border:1px dashed #adb8dd;border-radius:100px;background:transparent;color:var(--brand);font-weight:650}
+    .bottom-add:hover {background:var(--brand-soft)}
+    .help {display:none}
+    .footer {display:flex;justify-content:space-between;gap:10px;padding:0 0 28px;color:var(--muted);font-size:11px}
+    .toast {position:fixed;bottom:22px;left:50%;transform:translate(-50%,18px);max-width:calc(100vw - 30px);padding:12px 18px;color:#fff;background:#323440;border-radius:8px;opacity:0;pointer-events:none;z-index:10;transition:transform .2s,opacity .2s}
+    .toast.show {opacity:1;transform:translate(-50%,0)}
+    .sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media(max-width:890px) {
+      .overview {grid-template-columns:1fr}
+      .cat-head {flex-wrap:wrap}
+      .cat-head-right {justify-content:flex-start;width:100%}
+    }
+    @media(max-width:610px) {
+      .container {width:calc(100% - 24px)}
+      .topbar {min-height:67px}
+      .brand-copy {font-size:18px}
+      .top-actions {gap:2px}
+      .top-actions .btn {padding:0;width:42px;height:42px;min-height:42px}
+      .top-actions .btn span {display:none}
+      .hero {padding:17px;border-radius:23px}
+      .hero-bottom {gap:13px}
+      .course-field {max-width:none;flex-basis:100%}
+      .hero-buttons {width:100%;gap:6px}
+      .hero-btn {padding-inline:10px;font-size:12px;flex:1}
+      main {padding-top:12px}
+      .stats {grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+      .stats .stat:first-child {grid-column:span 2}
+      .stat {border-radius:19px;padding:16px}
+      .stat-value {font-size:30px}
+      .stats .stat:first-child .stat-value {font-size:39px}
+      .stat-header {font-size:12px}
+      .panel {padding:19px;border-radius:20px}
+      .section-heading {font-size:20px}
+      .section-actions .btn {padding:8px 12px;font-size:12px}
+      .category {border-radius:21px}
+      .cat-head {padding:16px 16px 13px}
+      .cat-head-right {gap:9px}
+      .cat-settings {margin:0 14px 13px;padding:13px}
+      .template-stack {flex-basis:100%}
+      .cat-meta {padding:0 14px 12px}
+      .items-wrap {margin:0 14px}
+      .table-heading {display:none}
+      .item-row {grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px;gap:7px;border-bottom:1px solid var(--line-soft);padding:9px 0}
+      .item-row .name-cell {grid-column:1 / 3}
+      .item-row .item-status {display:none}
+      .item-row .delete-cell {grid-column:3;grid-row:1 / 3;align-self:center}
+      .item-row .score-cell::before,.item-row .max-cell::before {display:block;color:var(--muted);font-size:11px;padding:0 0 3px 5px}
+      .item-row .score-cell::before {content:'得分'}
+      .item-row .max-cell::before {content:'满分'}
+      .cat-footer {padding:12px 14px 16px}
+      .footer span:first-child {display:none}
+    }
+    @media(prefers-reduced-motion:reduce) {*,*::before,*::after{transition:none!important}}
+  </style>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V5m0 14h16M8 15l4-5 4 2 4-6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M4 17v3h16v-3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></symbol>
+  </svg>
+  <header class="container topbar">
+    <div class="brand"><span class="brand-icon"><svg class="ico" style="width:22px;height:22px"><use href="#i-chart"/></svg></span><span class="brand-copy">GradeFlow<small>GRADE CALCULATOR</small></span></div>
+    <div class="top-actions">
+      <button class="btn" id="import-btn" title="导入 JSON 备份"><svg class="ico"><use href="#i-upload"/></svg><span>导入数据</span></button>
+      <button class="btn btn-primary" id="export-btn" title="导出全部课程为 JSON"><svg class="ico"><use href="#i-download"/></svg><span>导出备份</span></button>
+      <input class="sr-only" type="file" id="import-file" accept=".json,application/json" aria-label="选择 JSON 备份文件" />
+    </div>
+  </header>
+
+  <div class="container">
+    <section class="hero" aria-label="课程切换">
+      <div class="hero-bottom">
+        <div class="course-field"><label class="hero-label" for="course-select">当前课程</label><div class="select-wrap"><select id="course-select" aria-label="选择课程"></select></div></div>
+        <div class="hero-buttons"><button class="btn hero-btn" id="new-course"><svg class="ico"><use href="#i-plus"/></svg> 新建课程</button><button class="btn hero-btn" id="rename-course">重命名</button><button class="btn hero-btn" id="delete-course"><svg class="ico"><use href="#i-trash"/></svg> 删除课程</button></div>
+      </div>
+    </section>
+  </div>
+
+  <main class="container">
+    <div class="stats" aria-live="polite">
+      <section class="stat"><div class="stat-header">当前平均分 <span class="stat-icon"><svg class="ico"><use href="#i-chart"/></svg></span></div><div class="stat-value" id="stat-current">—<span class="stat-unit">/ 100</span></div><div class="stat-foot">仅对已出分项目的权重重新归一化</div></section>
+      <section class="stat"><div class="stat-header">已获得加权分 <span class="stat-icon"><svg class="ico"><use href="#i-check"/></svg></span></div><div class="stat-value" id="stat-earned">0.00<span class="stat-unit">/ 100</span></div><div class="stat-foot">尚未出分的项目暂不贡献分数</div></section>
+      <section class="stat"><div class="stat-header">已计分权重 <span class="stat-icon"><svg class="ico"><use href="#i-layers"/></svg></span></div><div class="stat-value" id="stat-covered">0<span class="stat-unit">%</span></div><div class="stat-foot">实际有成绩的项目占课程总分比例</div></section>
+    </div>
+
+    <div class="overview">
+      <section class="panel"><div class="panel-title"><h2>权重分布</h2><span class="pill" id="weight-pill">检查权重</span></div><div style="display:flex;align-items:baseline;gap:8px"><strong style="font-size:23px;letter-spacing:-.7px" id="weight-total">100%</strong><span class="minor-copy">总权重</span></div><div class="bar" id="weight-bar" role="img" aria-label="各类别权重条形图"></div><div class="minor-copy" id="weight-advice"></div><div class="legend" id="weight-legend"></div></section>
+      <section class="panel"><div class="panel-title"><h2>目标成绩</h2><svg class="ico" style="color:var(--brand);width:20px;height:20px"><use href="#i-target"/></svg></div><div class="goal-row"><label class="field-label" for="goal-input">期望课程总分</label><div class="goal-input"><input id="goal-input" type="number" min="0" max="100" step="0.1" value="90" inputmode="decimal"/><span style="color:var(--muted);font-weight:700">分</span></div></div><div class="goal-result" id="goal-result">—</div><div class="minor-copy" id="goal-info">剩余项目需要达到的平均分</div></section>
+    </div>
+
+    <div class="section-top"><div><h2 class="section-heading">评分项目</h2></div><div class="section-actions"><button class="btn" id="clear-scores">清空全部分数</button><button class="btn btn-tinted" id="add-category-top"><svg class="ico"><use href="#i-plus"/></svg> 新增类别</button></div></div>
+    <div id="categories" class="category-list"></div>
+    <button class="bottom-add" id="add-category-bottom">＋ 添加评分类别</button>
+
+  </main>
+  <footer class="container footer"><span>GradeFlow</span><span id="save-status">本地自动保存已启用</span></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    'use strict';
+    const STORAGE_KEY='gradeflow_courses_v1';
+    const COLORS=['#5368e5','#15a093','#e7a342','#9c70d9','#db7891','#3c8acb','#839557','#df8651'];
+    const $=id=>document.getElementById(id);
+    const uid=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+    const txt=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const numeric=v=>String(v??'').trim()===''?null:Number(v);
+    const fmt=(v,d=2)=>Number(v).toFixed(d);
+    const fmtShort=v=>Number.isInteger(v)?String(v):Number(v).toFixed(1);
+    const icon=(name,style='')=>`<svg class="ico" ${style?`style="${style}"`:''} aria-hidden="true"><use href="#i-${name}"/></svg>`;
+    function chineseNumber(value){
+      let num=Number(value);
+      if(!Number.isSafeInteger(num)||num<0)return String(value);
+      if(num===0)return '零';
+      const digits=['零','一','二','三','四','五','六','七','八','九'],units=['','十','百','千'],big=['','万','亿','兆'];
+      const groups=[];
+      while(num>0){groups.unshift(num%10000);num=Math.floor(num/10000);}
+      let result='',pendingZero=false;
+      groups.forEach((group,i)=>{
+        if(group===0){pendingZero=Boolean(result);return;}
+        if(result&&(pendingZero||group<1000))result+='零';
+        pendingZero=false;
+        let part='',zero=false;
+        for(let p=3;p>=0;p--){const v=Math.floor(group/10**p)%10;
+          if(v===0){if(part)zero=true;continue;}
+          if(zero)part+='零';
+          zero=false;
+          part+=v===1&&p===1&&part===''&&result===''?'':digits[v];
+          part+=units[p];
+        }
+        result+=part+(big[groups.length-1-i]||'');
+      });
+      return result;
+    }
+    function resolveName(template,number){
+      const t=String(template??'').trim()||'项目 {number}';
+      return t.replace(/\{(number|zhnumber)\}/g,(_,key)=>key==='number'?String(number):chineseNumber(number)).slice(0,100);
+    }
+    // Derive numbering from the current rows, not from the number of items ever created.
+    function parseChineseNumber(text){
+      const digits={'零':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9};
+      const small={'十':10,'百':100,'千':1000},large={'万':10000,'亿':100000000,'兆':1000000000000};
+      let total=0,section=0,digit=0;
+      for(const char of text){
+        if(Object.hasOwn(digits,char))digit=digits[char];
+        else if(Object.hasOwn(small,char)){section+=(digit||1)*small[char];digit=0;}
+        else if(Object.hasOwn(large,char)){total+=(section+digit)*large[char];section=0;digit=0;}
+        else return null;
+      }
+      const result=total+section+digit;
+      return Number.isSafeInteger(result)&&result>0?result:null;
+    }
+    function numberFromName(template,name){
+      const t=String(template??'').trim()||'项目 {number}';
+      const parts=t.split(/(\{number\}|\{zhnumber\})/g);
+      const first=parts.find(x=>x==='{number}'||x==='{zhnumber}');
+      if(!first)return null;
+      const escape=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const pattern='^'+parts.map(x=>x==='{number}'?'(\\d+)':x==='{zhnumber}'?'([零一二三四五六七八九十百千万亿兆]+)':escape(x)).join('')+'$';
+      const found=String(name??'').match(new RegExp(pattern));
+      if(!found)return null;
+      const n=first==='{number}'?Number(found[1]):parseChineseNumber(found[1]);
+      return Number.isSafeInteger(n)&&n>0&&resolveName(t,n)===name?n:null;
+    }
+    function nextNumberFor(cat){
+      const names=new Set(cat.items.map(item=>item.name));
+      let candidate=cat.items.length+1;
+      for(let i=cat.items.length-1;i>=0;i--){
+        const current=numberFromName(cat.template,cat.items[i].name);
+        if(current!==null){candidate=current+1;break;}
+      }
+      if(/\{(number|zhnumber)\}/.test(cat.template)){
+        // Skip existing names when a non-terminal row was deleted or names were edited.
+        for(let attempts=0;attempts<=cat.items.length&&names.has(resolveName(cat.template,candidate));attempts++)candidate++;
+      }
+      return candidate;
+    }
+    function templateFromItems(items){
+      const name=String(items?.[0]?.name??'');
+      if(/\d+/.test(name))return name.replace(/\d+/, '{number}');
+      return '项目 {number}';
+    }
+    function makeCategory(name='新类别',weight='0',items=[['项目 1','','100']],template){
+      return {id:uid(),name,weight:String(weight),method:'equal',defaultMax:'100',template:template||'项目 {number}',items:items.map(x=>({id:uid(),name:x[0],score:String(x[1]),max:String(x[2])}))};
+    }
+    function makeCourse(name='新课程') {return {id:uid(),name,goal:'90',categories:[makeCategory('作业','20',[['Homework 1','','100'],['Homework 2','','100']],'Homework {number}'),makeCategory('测验','20',[['Quiz 1','','100'],['Quiz 2','','100']],'Quiz {number}'),makeCategory('期中考试','25',[['Midterm','','100']],'Midterm {number}'),makeCategory('期末考试','35',[['Final','','100']],'Final {number}')]};}
+    function initialState(){const c=makeCourse('我的课程');return {version:2,activeCourseId:c.id,courses:[c]};}
+    function sanitize(raw){
+      if(!raw||typeof raw!=='object'||!Array.isArray(raw.courses)||raw.courses.length<1||raw.courses.length>100)throw Error('备份不包含有效课程');
+      const courses=raw.courses.map(c=>({
+        id:String(c.id||uid()),name:String(c.name??'未命名课程').slice(0,100),goal:String(c.goal??90).slice(0,30),
+        categories:(Array.isArray(c.categories)?c.categories:[]).slice(0,60).map(cat=>{
+          const items=(Array.isArray(cat.items)?cat.items:[]).slice(0,200).map(item=>({id:String(item.id||uid()),name:String(item.name??'项目').slice(0,100),score:String(item.score??'').slice(0,30),max:String(item.max??100).slice(0,30)}));
+          const inferredMax=items.find(it=>numeric(it.max)!==null&&numeric(it.max)>0)?.max||'100';
+          return {id:String(cat.id||uid()),name:String(cat.name??'未命名类别').slice(0,100),weight:String(cat.weight??0).slice(0,30),method:cat.method==='points'?'points':'equal',
+            defaultMax:String(cat.defaultMax??inferredMax).slice(0,30),template:String(cat.template??templateFromItems(items)).slice(0,100),
+            items};
+        })
+      }));
+      let active=String(raw.activeCourseId||'');if(!courses.some(c=>c.id===active))active=courses[0].id;
+      return {version:2,activeCourseId:active,courses};
+    }
+    function load(){try{const raw=localStorage.getItem(STORAGE_KEY);return raw?sanitize(JSON.parse(raw)):initialState();}catch(e){console.warn('本地数据加载失败',e);return initialState();}}
+    let state=load();
+    let storageAvailable=true;
+    function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));storageAvailable=true;$('save-status').textContent='已自动保存到本地浏览器';}catch(e){storageAvailable=false;$('save-status').textContent='本地保存不可用，请使用“导出备份”';}}
+    let toastTimer;
+    function notify(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2800);}
+    function course(){return state.courses.find(c=>c.id===state.activeCourseId)||state.courses[0];}
+    function categoryById(id){return course().categories.find(c=>c.id===id);}
+    function measure(c){
+      let earned=0,covered=0,weightTotal=0,invalid=[];
+      const categories=c.categories.map(cat=>{
+        const weight=numeric(cat.weight), wValid=weight!==null&&Number.isFinite(weight)&&weight>=0&&weight<=100;
+        if(!wValid)invalid.push(`「${cat.name||'类别'}」的权重无效`);
+        const w=wValid?weight:0;weightTotal+=w;
+        const items=cat.items;
+        let shareTotal=0;
+        if(cat.method==='points'){
+          for(const it of items){const m=numeric(it.max);if(m===null||!Number.isFinite(m)||m<=0){invalid.push(`「${it.name||'项目'}」的满分应大于 0`);}else shareTotal+=m;}
+        }else shareTotal=items.length;
+        let catEarned=0,catCovered=0,finished=0;
+        for(const it of items){const max=numeric(it.max),score=numeric(it.score);
+          if(max===null||!Number.isFinite(max)||max<=0){if(cat.method!=='points')invalid.push(`「${it.name||'项目'}」的满分应大于 0`);continue;}
+          if(score===null)continue;
+          if(!Number.isFinite(score)||score<0||score>max){invalid.push(`「${it.name||'项目'}」的得分应在 0–满分之间`);continue;}
+          if(shareTotal===0)continue;
+          let weightShare=cat.method==='points'?max/shareTotal:1/shareTotal;
+          catCovered+=w*weightShare;
+          catEarned+=w*weightShare*(score/max);
+          finished++;
+        }
+        earned+=catEarned;covered+=catCovered;
+        return {id:cat.id,w,catEarned,catCovered,finished,count:items.length,average:catCovered>0?catEarned/catCovered*100:null};
+      });
+      return {earned,covered,weightTotal,invalid,categories};
+    }
+    function render(){
+      $('course-select').innerHTML=state.courses.map(c=>`<option value="${txt(c.id)}" ${c.id===course().id?'selected':''}>${txt(c.name||'未命名课程')}</option>`).join('');
+      $('delete-course').disabled=state.courses.length===1;
+      $('delete-course').style.opacity=state.courses.length===1?'.45':'1';
+      $('goal-input').value=course().goal;
+      const cats=course().categories;
+      $('categories').innerHTML=cats.length?cats.map((cat,index)=>categoryHTML(cat,index)).join(''):'<div class="empty-cats">还没有评分类别。点击「新增类别」开始设置。</div>';
+      refresh();
+    }
+    function categoryHTML(cat,index){
+      const color=COLORS[index%COLORS.length];
+      const rows=cat.items.length?cat.items.map(it=>`<div class="item-row" data-row-id="${txt(it.id)}">
+        <div class="name-cell"><input class="item-input" type="text" maxlength="100" value="${txt(it.name)}" aria-label="项目名称" placeholder="例如 Homework 1" data-field="item-name" data-cat="${txt(cat.id)}" data-item="${txt(it.id)}" /></div>
+        <div class="score-cell"><input class="item-input item-number" type="number" inputmode="decimal" step="any" min="0" value="${txt(it.score)}" aria-label="${txt(it.name)} 的得分" placeholder="未出分" data-field="item-score" data-cat="${txt(cat.id)}" data-item="${txt(it.id)}" /></div>
+        <div class="max-cell"><input class="item-input item-number" type="number" inputmode="decimal" step="any" min="0.01" value="${txt(it.max)}" aria-label="${txt(it.name)} 的满分" data-field="item-max" data-cat="${txt(cat.id)}" data-item="${txt(it.id)}" /></div>
+        <span class="item-status" data-item-status="${txt(it.id)}">—</span>
+        <div class="delete-cell"><button class="btn btn-icon btn-danger" data-action="delete-item" data-cat="${txt(cat.id)}" data-item="${txt(it.id)}" aria-label="删除 ${txt(it.name)}" title="删除项目">${icon('trash')}</button></div>
+      </div>`).join(''):'<div class="empty-list">没有项目。点击下方添加项目。</div>';
+      return `<section class="category" style="--accent:${color}" data-cat-card="${txt(cat.id)}">
+        <div class="cat-topline"></div><div class="cat-head"><div style="min-width:0;flex:1"><input class="cat-name" type="text" maxlength="100" value="${txt(cat.name)}" aria-label="类别名称" data-field="cat-name" data-cat="${txt(cat.id)}" /></div>
+          <div class="cat-head-right"><div class="control-stack"><label class="field-label" for="weight-${txt(cat.id)}">类别权重</label><div class="number-unit"><input id="weight-${txt(cat.id)}" type="number" min="0" max="100" step="any" inputmode="decimal" value="${txt(cat.weight)}" data-field="cat-weight" data-cat="${txt(cat.id)}" aria-label="类别权重"/><span>%</span></div></div>
+            <div class="control-stack"><label class="field-label" for="method-${txt(cat.id)}">内部计算方式</label><select class="cat-method" id="method-${txt(cat.id)}" data-field="cat-method" data-cat="${txt(cat.id)}"><option value="equal" ${cat.method==='equal'?'selected':''}>等权平均</option><option value="points" ${cat.method==='points'?'selected':''}>按总分汇总</option></select></div>
+            <button class="btn btn-icon btn-danger" style="margin-top:19px" data-action="delete-category" data-cat="${txt(cat.id)}" title="删除类别" aria-label="删除类别 ${txt(cat.name)}">${icon('trash')}</button>
+          </div></div>
+          <div class="cat-settings">
+            <div class="control-stack"><label class="field-label" for="default-max-${txt(cat.id)}">默认满分</label><div class="number-unit"><input id="default-max-${txt(cat.id)}" type="number" min="0.01" step="any" inputmode="decimal" value="${txt(cat.defaultMax)}" data-field="cat-default-max" data-cat="${txt(cat.id)}" aria-label="默认满分"/><span>分</span></div></div>
+            <div class="control-stack template-stack"><label class="field-label" for="template-${txt(cat.id)}">名称模板</label><div class="template-control"><input class="template-input" id="template-${txt(cat.id)}" type="text" maxlength="100" spellcheck="false" value="${txt(cat.template)}" data-field="cat-template" data-cat="${txt(cat.id)}" aria-label="名称模板" placeholder="项目 {number}"/><button class="token-btn" type="button" data-action="insert-token" data-cat="${txt(cat.id)}" data-token="{number}" title="插入阿拉伯数字编号">{number}</button><button class="token-btn" type="button" data-action="insert-token" data-cat="${txt(cat.id)}" data-token="{zhnumber}" title="插入中文数字编号">{zhnumber}</button></div><div class="next-preview" data-next-preview="${txt(cat.id)}">下一个：${txt(resolveName(cat.template,nextNumberFor(cat)))}</div></div>
+          </div>
+          <div class="cat-meta"><span class="cat-metric" data-cat-avg="${txt(cat.id)}">当前平均 <b>—</b></span><span class="cat-metric" data-cat-covered="${txt(cat.id)}">已计分 <b>0%</b></span><span class="cat-metric" data-cat-count="${txt(cat.id)}"> <b>0/${cat.items.length}</b> 已出分</span></div>
+          <div class="items-wrap"><div class="table-heading"><span>成绩项目</span><span>得分</span><span>满分</span><span>状态</span><span></span></div>${rows}</div>
+          <div class="cat-footer"><button class="small-add" data-action="add-item" data-cat="${txt(cat.id)}">${icon('plus')} 添加成绩项目</button></div></section>`;
+    }
+    function refresh(){
+      const c=course(),m=measure(c),valid=m.invalid.length===0;
+      const weightOK=Math.abs(m.weightTotal-100)<.00001;
+      $('stat-current').innerHTML=valid&&m.covered>0?`${fmt(m.earned/m.covered*100)}<span class="stat-unit">/ 100</span>`:`—<span class="stat-unit">/ 100</span>`;
+      $('stat-earned').innerHTML=valid?`${fmt(m.earned)}<span class="stat-unit">/ 100</span>`:`—<span class="stat-unit">/ 100</span>`;
+      $('stat-covered').innerHTML=valid?`${fmtShort(m.covered)}<span class="stat-unit">%</span>`:`—<span class="stat-unit">%</span>`;
+      $('weight-total').textContent=fmtShort(m.weightTotal)+'%';
+      const pill=$('weight-pill');pill.className='pill '+(!valid?'pill-danger':weightOK?'pill-good':'pill-warn');pill.textContent=!valid?'数值需要检查':weightOK?'✓ 权重正确':'! 权重不等于 100%';
+      $('weight-advice').textContent=!valid?`发现 ${m.invalid.length} 处无效成绩或权重，请检查红色输入框。`:weightOK?'':`权重合计 ${fmtShort(m.weightTotal)}%，应为 100%。`;
+      const bar=$('weight-bar');bar.innerHTML='';const legend=$('weight-legend');legend.innerHTML='';
+      c.categories.forEach((cat,i)=>{
+        const w=m.categories[i].w;
+        if(w>0){const seg=document.createElement('span');seg.className='bar-segment';seg.style.width=Math.min(w,100)+'%';seg.style.background=COLORS[i%COLORS.length];seg.title=`${cat.name}：${fmtShort(w)}%`;bar.append(seg);}
+        const div=document.createElement('span');div.className='legend-entry';const dot=document.createElement('span');dot.className='dot';dot.style.background=COLORS[i%COLORS.length];const label=document.createElement('span');label.textContent=`${cat.name||'未命名'} ${fmtShort(w)}%`;div.append(dot,label);legend.append(div);
+        const metric=m.categories[i];const avg=document.querySelector(`[data-cat-avg="${CSS.escape(cat.id)}"]`);if(avg)avg.innerHTML=`当前平均 <b>${valid&&metric.average!==null?fmt(metric.average)+' 分':'—'}</b>`;
+        const cov=document.querySelector(`[data-cat-covered="${CSS.escape(cat.id)}"]`);if(cov)cov.innerHTML=`已计分 <b>${fmtShort(metric.catCovered)}%</b>`;
+        const cnt=document.querySelector(`[data-cat-count="${CSS.escape(cat.id)}"]`);if(cnt)cnt.innerHTML=`<b>${metric.finished}/${metric.count}</b> 已出分`;
+        cat.items.forEach(it=>{
+          const score=numeric(it.score),max=numeric(it.max);const status=document.querySelector(`[data-item-status="${CSS.escape(it.id)}"]`);
+          const scoreEl=document.querySelector(`[data-field="item-score"][data-item="${CSS.escape(it.id)}"]`);
+          const maxEl=document.querySelector(`[data-field="item-max"][data-item="${CSS.escape(it.id)}"]`);
+          const maxInvalid=max===null||!Number.isFinite(max)||max<=0;
+          const scoreInvalid=score!==null&&(!Number.isFinite(score)||score<0||maxInvalid||score>max);
+          if(status){status.textContent=scoreInvalid||maxInvalid?'有误':score===null?'未出分':'已出分';status.classList.toggle('done',score!==null&&!scoreInvalid&&!maxInvalid);}
+          if(scoreEl)scoreEl.classList.toggle('invalid',scoreInvalid);
+          if(maxEl)maxEl.classList.toggle('invalid',maxInvalid);
+        });
+        const weightInput=document.querySelector(`[data-field="cat-weight"][data-cat="${CSS.escape(cat.id)}"]`);if(weightInput){const w=numeric(cat.weight);weightInput.parentElement.classList.toggle('invalid',w===null||!Number.isFinite(w)||w<0||w>100);}
+        const defaultInput=document.querySelector(`[data-field="cat-default-max"][data-cat="${CSS.escape(cat.id)}"]`);if(defaultInput){const d=numeric(cat.defaultMax);defaultInput.parentElement.classList.toggle('invalid',d===null||!Number.isFinite(d)||d<=0);}
+        const preview=document.querySelector(`[data-next-preview="${CSS.escape(cat.id)}"]`);if(preview)preview.textContent='下一个：'+resolveName(cat.template,nextNumberFor(cat));
+      });
+      const goal=numeric(c.goal),remain=100-m.covered;
+      const result=$('goal-result'),info=$('goal-info');
+      if(!valid){result.textContent='请先修正数据';info.textContent='检查标红的输入框。';}
+      else if(!weightOK){result.textContent='暂不可计算';info.textContent='权重总和须为 100%。';}
+      else if(goal===null||!Number.isFinite(goal)||goal<0||goal>100){result.textContent='目标需在 0–100';info.textContent='请输入 0–100 之间的目标分数。';}
+      else if(remain<.0000001){result.textContent=fmt(m.earned)+' 分';info.textContent=`全部已出分 · ${m.earned+1e-8>=goal?'目标已达成':'未达到目标'}`;}
+      else {
+        const required=(goal-m.earned)*100/remain;
+        if(required>100+1e-7){result.textContent='目标无法达到';info.textContent=`最高可得 ${fmt(m.earned+remain)} 分。`;}
+        else if(required<=0){result.textContent='目标已确保';info.textContent=`已获得 ${fmt(m.earned)} 加权分。`;}
+        else {result.textContent=fmt(required)+' 分';info.textContent=`剩余 ${fmtShort(remain)}% 权重所需平均分。`;}
+      }
+    }
+    document.addEventListener('input',e=>{
+      const t=e.target;
+      if(t.id==='goal-input'){course().goal=t.value;save();refresh();return;}
+      const field=t.dataset.field;if(!field)return;
+      const cat=categoryById(t.dataset.cat);if(!cat)return;
+      if(field==='cat-name'){cat.name=t.value;}
+      else if(field==='cat-weight'){cat.weight=t.value;}
+      else if(field==='cat-default-max'){cat.defaultMax=t.value;}
+      else if(field==='cat-template'){cat.template=t.value;}
+      else if(field==='item-name'||field==='item-score'||field==='item-max'){
+        const it=cat.items.find(item=>item.id===t.dataset.item);if(!it)return;
+        const key={'item-name':'name','item-score':'score','item-max':'max'}[field];it[key]=t.value;
+      }else return;
+      save();refresh();
+      if(field==='cat-template'){
+        const preview=document.querySelector(`[data-next-preview="${CSS.escape(cat.id)}"]`);
+        if(preview)preview.textContent='下一个：'+resolveName(cat.template,nextNumberFor(cat));
+      }
+      if(field==='cat-default-max')t.closest('.number-unit')?.classList.toggle('invalid',numeric(cat.defaultMax)===null||!Number.isFinite(numeric(cat.defaultMax))||numeric(cat.defaultMax)<=0);
+    });
+    document.addEventListener('change',e=>{
+      const t=e.target;
+      if(t.id==='course-select'){state.activeCourseId=t.value;save();render();return;}
+      if(t.dataset.field==='cat-method'){const cat=categoryById(t.dataset.cat);if(cat){cat.method=t.value;save();refresh();}}
+    });
+    document.addEventListener('click',e=>{
+      const btn=e.target.closest('button[data-action]');if(!btn)return;
+      const action=btn.dataset.action,cat=categoryById(btn.dataset.cat);if(!cat)return;
+      if(action==='insert-token'){
+        const input=document.querySelector(`[data-field="cat-template"][data-cat="${CSS.escape(cat.id)}"]`);
+        if(!input)return;
+        const token=btn.dataset.token,st=input.selectionStart??input.value.length,en=input.selectionEnd??st;
+        const output=input.value.slice(0,st)+token+input.value.slice(en);
+        if(output.length>100){notify('模板最多 100 个字符');return;}
+        input.value=output;input.focus();input.setSelectionRange(st+token.length,st+token.length);
+        cat.template=output;save();refresh();return;
+      }
+      if(action==='add-item'){
+        const max=numeric(cat.defaultMax);
+        if(max===null||!Number.isFinite(max)||max<=0){notify('请设置有效的默认满分');return;}
+        if(cat.items.length>=200){notify('每个类别最多 200 个项目');return;}
+        const number=nextNumberFor(cat);
+        cat.items.push({id:uid(),name:resolveName(cat.template,number),score:'',max:String(cat.defaultMax)});
+        save();render();
+        const card=document.querySelector(`[data-cat-card="${CSS.escape(cat.id)}"]`);
+        const rows=card?.querySelectorAll('.item-row');rows?.[rows.length-1]?.querySelector('.name-cell input')?.focus();
+      }
+      if(action==='delete-item'){const item=cat.items.find(x=>x.id===btn.dataset.item);if(!item)return;cat.items=cat.items.filter(x=>x.id!==item.id);save();render();}
+      if(action==='delete-category'){if(!confirm(`确定删除「${cat.name||'未命名类别'}」及其中全部成绩项目吗？`))return;course().categories=course().categories.filter(x=>x.id!==cat.id);save();render();notify('已删除类别');}
+    });
+    function addCategory(){const c=course(),cat=makeCategory('新类别','0',[['项目 1','','100']],'项目 {number}');c.categories.push(cat);save();render();const card=document.querySelector(`[data-cat-card="${CSS.escape(cat.id)}"]`);card?.scrollIntoView({behavior:'smooth',block:'center'});card?.querySelector('.cat-name')?.focus();}
+    $('add-category-top').addEventListener('click',addCategory);
+    $('add-category-bottom').addEventListener('click',addCategory);
+    $('new-course').addEventListener('click',()=>{const name=prompt('请输入新课程名称：','新课程');if(name===null)return;const c=makeCourse(name.trim()||'新课程');state.courses.push(c);state.activeCourseId=c.id;save();render();notify('新课程已创建');});
+    $('rename-course').addEventListener('click',()=>{const c=course();const name=prompt('修改当前课程名称：',c.name);if(name===null)return;c.name=name.trim()||'未命名课程';save();render();notify('课程名称已更新');});
+    $('delete-course').addEventListener('click',()=>{if(state.courses.length<=1)return;const c=course();if(!confirm(`确定删除「${c.name}」及其中全部数据吗？此操作不可撤销。`))return;state.courses=state.courses.filter(x=>x.id!==c.id);state.activeCourseId=state.courses[0].id;save();render();notify('课程已删除');});
+    $('clear-scores').addEventListener('click',()=>{if(!confirm('确定清空当前课程所有项目的得分吗？类别、权重与满分将保留。'))return;for(const cat of course().categories)for(const it of cat.items)it.score='';save();render();notify('已清空当前课程分数');});
+    $('export-btn').addEventListener('click',()=>{const payload=JSON.stringify(state,null,2);const blob=new Blob([payload],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='GradeFlow-成绩备份-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('数据备份已导出');});
+    $('import-btn').addEventListener('click',()=>$('import-file').click());
+    $('import-file').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(!file)return;if(file.size>1024*1024){notify('备份文件不能大于 1MB');return;}try{const imported=sanitize(JSON.parse(await file.text()));if(!confirm('导入将覆盖当前所有课程和成绩，是否继续？建议先导出备份。'))return;state=imported;save();render();notify('成绩数据已成功导入');}catch(err){notify('无法导入：'+err.message);}});
+    save();render();
+  </script>
+</body>
+</html>
